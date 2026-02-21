@@ -141,8 +141,10 @@ namespace Force.DeepCloner.Helpers
 				if (tp.Name == "ContextBoundObject") break;
 #endif
 
-				fi.AddRange(tp.GetDeclaredFields());
-				tp = tp.BaseType();
+                // Avoid to copy property change event handlers (or should we avoid to copy event handlers at all?)
+                var fields = tp.GetDeclaredFields().Where(x => !x.IsPropertyChangeEventHandler());
+                fi.AddRange(fields);
+                tp = tp.BaseType();
 			}
 			while (tp != null);
 

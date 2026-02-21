@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 
@@ -50,8 +52,33 @@ namespace Force.DeepCloner.Helpers
 			return t.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 #endif
 		}
-		
-		public static PropertyInfo[] GetPublicProperties(this Type t)
+
+        /// <summary>
+        /// Returns all fields declared on the specified type and its base types.
+        /// </summary>
+        /// <param name="t"></param>
+        internal static FieldInfo[] GetAllFieldsIncludingBaseTypes(this Type t)
+        {
+            var fields = new List<FieldInfo>();
+            Type currentType = t;
+            do
+            {
+                fields.AddRange(currentType.GetAllFields());
+                currentType = currentType.BaseType();
+            }
+            while (currentType != null);
+            return fields.ToArray();
+        }
+
+        /// <summary>
+        /// Indicates whether the field type is <see cref="PropertyChangingEventHandler"/> or <see cref="PropertyChangedEventHandler"/>.
+        /// </summary>
+        internal static bool IsPropertyChangeEventHandler(this FieldInfo f)
+        {
+            return f.FieldType == typeof(PropertyChangingEventHandler) || f.FieldType == typeof(PropertyChangedEventHandler);
+        }
+
+        public static PropertyInfo[] GetPublicProperties(this Type t)
 		{
 #if NETCORE
 			return t.GetTypeInfo().DeclaredProperties.ToArray();

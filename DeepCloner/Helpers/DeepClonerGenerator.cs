@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Linq;
 
 namespace Force.DeepCloner.Helpers
@@ -33,8 +34,10 @@ namespace Force.DeepCloner.Helpers
 			if (cloner == null) 
 				return obj;
 
-			return cloner(obj, new DeepCloneState());
-		}
+            var result = cloner(obj, new DeepCloneState());
+            result = RemovePropertyChangeEventHandler(result);
+            return result;
+        }
 
 		internal static object CloneClassInternal(object obj, DeepCloneState state)
 		{
@@ -52,10 +55,29 @@ namespace Force.DeepCloner.Helpers
 			if (knownRef != null) 
 				return knownRef;
 
-			return cloner(obj, state);
-		}
+            var result = cloner(obj, state);
+            result = RemovePropertyChangeEventHandler(result);
+            return result;
+        }
 
-		private static T CloneStructInternal<T>(T obj, DeepCloneState state) // where T : struct
+        /// <summary>
+        /// Clears fields that store <see cref="PropertyChangingEventHandler"/> or <see cref="PropertyChangedEventHandler"/> instances.
+        /// </summary>
+        private static object RemovePropertyChangeEventHandler(object o)
+        {
+            var t = o.GetType();
+            var fields = o.GetType().GetAllFieldsIncludingBaseTypes();
+            foreach (var fieldInfo in fields)
+            {
+                if (fieldInfo.IsPropertyChangeEventHandler())
+                {
+                    fieldInfo.SetValue(o, null);
+                }
+            }
+            return o;
+        }
+
+        private static T CloneStructInternal<T>(T obj, DeepCloneState state) // where T : struct
 		{
 			// no loops, no nulls, no inheritance
 			var cloner = GetClonerForValueType<T>();
